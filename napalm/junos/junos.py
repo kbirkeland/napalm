@@ -89,28 +89,40 @@ class JunOSDriver(NetworkDriver):
         self.keepalive = optional_args.get("keepalive", 30)
         self.ssh_config_file = optional_args.get("ssh_config_file", None)
         self.ignore_warning = optional_args.get("ignore_warning", False)
+        self.transport = optional_args.get("transport", "ssh")
 
         # Define locking method
         self.lock_disable = optional_args.get("lock_disable", False)
         self.session_config_lock = optional_args.get("config_lock", False)
 
-        if self.key_file:
+        if self.transport == "ssh":
+            if self.key_file:
+                self.device = Device(
+                    hostname,
+                    user=username,
+                    password=password,
+                    ssh_private_key_file=self.key_file,
+                    ssh_config=self.ssh_config_file,
+                    port=self.port,
+                )
+            else:
+                self.device = Device(
+                    hostname,
+                    user=username,
+                    password=password,
+                    port=self.port,
+                    ssh_config=self.ssh_config_file,
+                )
+        elif self.transport == "telnet":
             self.device = Device(
                 hostname,
                 user=username,
                 password=password,
-                ssh_private_key_file=self.key_file,
-                ssh_config=self.ssh_config_file,
+                mode="telnet",
                 port=self.port,
             )
         else:
-            self.device = Device(
-                hostname,
-                user=username,
-                password=password,
-                port=self.port,
-                ssh_config=self.ssh_config_file,
-            )
+            raise ValueError("Unknown transport {}".format(self.transport))
 
         self.platform = "junos"
         self.profile = [self.platform]
